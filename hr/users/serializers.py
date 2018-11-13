@@ -6,20 +6,18 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, Serializer, ValidationError
 
 from hr.users.config import Config, Status
+from hr.users.serializer_mixins import ValidatorMixin
 
 User = get_user_model()
 
 
-class RegisterSerializer(serializers.Serializer):
+class RegisterSerializer(ValidatorMixin, serializers.Serializer):
     email = serializers.EmailField(required=True)
     name = serializers.CharField(required=True, max_length=255)
     profile_image = serializers.ImageField(required=True)
     role = serializers.IntegerField(min_value=Config.HR, max_value=Config.REGULAR)
     password1 = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
-
-    def validate_email(self, email):
-        return get_adapter().validate_unique_email(email)
 
     def validate_password1(self, password):
         return get_adapter().clean_password(password)
@@ -41,10 +39,6 @@ class RegisterSerializer(serializers.Serializer):
 
     def validate(self, data):
         super().validate(attrs=data)
-
-        domain = data["email"].split("@")[1]
-        if domain not in Config.DOMAINS:
-            raise serializers.ValidationError(_(f"{domain} is an invalid domain"))
 
         if data['password1'] != data['password2']:
             raise serializers.ValidationError(_("The two password fields didn't match."))
@@ -96,14 +90,16 @@ class LoginSerializer(Serializer):
         return attrs
 
 
-class UserDetailsSerializer(ModelSerializer):
+class UserDetailsSerializer(ValidatorMixin, ModelSerializer):
 
     class Meta:
         model = User
         fields = ('id', 'email', 'name', 'manager_approved',
                   'status', 'role', 'is_superuser',
-                  'hr_reviewed_by', 'manager_approved_by')
-        read_only_fields = ('is_superuser',)
+                  'hr_reviewed_by', 'manager_approved_by',
+                  'profile_image')
+        read_only_fields = ('is_superuser', 'manager_approved', 'status',
+                            'hr_reviewed_by', 'manager_approved_by')
 
 
 class UserPublicSerializer(ModelSerializer):
@@ -126,11 +122,7 @@ class HRApproveSerializer(serializers.ModelSerializer):
 
 class ManagerApproveSerializer(HRApproveSerializer):
 
-    status = serializers.SerializerMethodField(read_only=True)
-
     class Meta:
         model = User
         fields = ["name", "status", "manager_approved"]
-
-    def get_status(self, obj):
-        return obj.status
+        read_only_fields = ["status"]

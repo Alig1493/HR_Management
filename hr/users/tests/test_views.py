@@ -125,6 +125,46 @@ class TestLogin:
         assert request.status_code == 400
 
 
+class TestUpdate:
+
+    url = reverse("v1:users:rest_user_details")
+
+    def test_get_user_details(self, user, auth_client):
+
+        request = auth_client.get(self.url)
+
+        assert request.status_code == 200
+        assert request.data["email"] == user.email
+
+    def test_update_user_email(self, user, auth_client):
+        email = "something.else@misfit.tech"
+
+        data = {
+            "email": email
+        }
+
+        request = auth_client.patch(self.url, data=data)
+
+        assert request.status_code == 200
+        assert request.data["email"] == email
+        assert User.objects.get(id=request.data["id"]).email == email
+
+    def test_update_invalid_user_email(self, user, auth_client):
+        email = "something.else@misfit.com"
+
+        data = {
+            "email": email
+        }
+
+        request = auth_client.patch(self.url, data=data)
+
+        assert request.status_code == 400
+
+        user.refresh_from_db()
+
+        assert not user.email == email
+
+
 class TestLogout:
 
     url = reverse("v1:users:rest_logout")
