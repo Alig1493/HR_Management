@@ -6,7 +6,8 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, Serializer, ValidationError
 
 from hr.users.config import Config, Status
-from hr.users.serializer_mixins import ValidatorMixin
+from hr.users.models import Log
+from hr.users.serializer_mixins import LogMixins, ValidatorMixin
 
 User = get_user_model()
 
@@ -111,7 +112,7 @@ class UserPublicSerializer(ModelSerializer):
         fields = ('id', 'full_name', 'email')
 
 
-class HRApproveSerializer(serializers.ModelSerializer):
+class HRApproveSerializer(LogMixins, serializers.ModelSerializer):
 
     name = serializers.CharField(source="get_full_name", read_only=True)
 
@@ -119,10 +120,74 @@ class HRApproveSerializer(serializers.ModelSerializer):
         model = User
         fields = ["name", "status"]
 
+    def update(self, instance, validated_data):
+        log = None
+        user = self._get_user()
 
-class ManagerApproveSerializer(HRApproveSerializer):
+        if instance.status != validated_data["status"]:
+            print("Creating logs for hr")
+
+            review_type = self._get_review_type(instance, validated_data)
+            review_change = self._get_review_change(review_type, instance, validated_data)
+
+            log = Log(
+                reviewed_by=user,
+                reviewed_by_role=user.role,
+                reviewed_on=instance,
+                reviewed_on_role=instance.role,
+                review_type=review_type,
+                changed_from=review_change[0],
+                changed_to=review_change[1]
+            )
+
+        updated_instance = super().update(instance, validated_data)
+
+        if updated_instance and log:
+            log.save()
+
+        return updated_instance
+
+
+class ManagerApproveSerializer(LogMixins, serializers.ModelSerializer):
 
     class Meta:
         model = User
         fields = ["name", "status", "manager_approved"]
         read_only_fields = ["status"]
+
+    def get_status(self, obj):
+        return obj.status
+
+    def update(self, instance, validated_data):
+        log = None
+        user = self._get_user()
+
+        if instance.manager_approved != validated_data["manager_approved"]:
+            print("Creating logs for manager")
+
+            review_type = self._get_review_type(instance, validated_data)
+            review_change = self._get_review_change(review_type, instance, validated_data)
+
+            log = Log(
+                reviewed_by=user,
+                reviewed_by_role=user.role,
+                reviewed_on=instance,
+                reviewed_on_role=instance.role,
+                review_type=review_type,
+                changed_from=review_change[0],
+                changed_to=review_change[1]
+            )
+
+        updated_instance = super().update(instance, validated_data)
+
+        if updated_instance and log:
+            log.save()
+
+        return updated_instance
+
+
+class LogSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Log
+        exclude = []

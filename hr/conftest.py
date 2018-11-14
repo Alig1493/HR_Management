@@ -2,6 +2,7 @@ import pytest
 from hr import settings
 from rest_framework.test import APIClient
 
+from hr.users.config import Config
 from hr.users.tests.factories import UserFactory
 
 
@@ -20,7 +21,7 @@ def client():
 
 @pytest.fixture
 def user(db):
-    return UserFactory()
+    return UserFactory(role=Config.HR)
 
 
 @pytest.fixture

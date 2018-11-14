@@ -24,3 +24,14 @@ class Status:
         (PROCESSED, "Processed"),
         (HR_REVIEWED, "HR reviewed")
     )
+
+
+class ReviewType:
+
+    MANAGER_APPROVAL = 1
+    HR_REVIEW = 2
+
+    CHOICES = (
+        (MANAGER_APPROVAL, "Manager Approval"),
+        (HR_REVIEW, "HR Review")
+    )
