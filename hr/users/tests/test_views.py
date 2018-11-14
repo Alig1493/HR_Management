@@ -2,7 +2,8 @@ import pytest
 import factory
 from django.urls import reverse
 
-from hr.users.config import Config, Status
+from hr.users.config import Config, Status, ReviewType
+from hr.users.models import Log
 from .factories import fake, User, UserFactory
 
 
@@ -159,12 +160,11 @@ class TestHR:
         assert request.status_code == 200
 
     def test_approve_user(self, user, auth_client):
-        user.role = Config.HR
-        user.save()
 
         new_user = UserFactory(role=Config.REGULAR)
 
         assert new_user.status == Status.OPEN
+        assert not new_user.manager_approved
 
         self.url = reverse("v1:hr:user-requests-approve", args=[new_user.id])
 
@@ -184,6 +184,18 @@ class TestHR:
         assert new_user.status == Status.HR_REVIEWED
         assert not new_user.manager_approved
         assert new_user.hr_reviewed_by == user
+
+        log = Log.objects.filter(
+            reviewed_by=user,
+            reviewed_by_role=user.role,
+            reviewed_on=new_user,
+            reviewed_on_role=new_user.role,
+            review_type=ReviewType.HR_REVIEW,
+            changed_from=f"{Status.OPEN}",
+            changed_to=f"{Status.HR_REVIEWED}"
+        )
+
+        assert log.exists()
 
 
 class TestManager:
@@ -215,6 +227,7 @@ class TestManager:
         new_user = UserFactory(role=Config.REGULAR, status=Status.HR_REVIEWED)
 
         assert new_user.status == Status.HR_REVIEWED
+        assert not new_user.manager_approved
 
         self.url = reverse("v1:manager:user-requests-approve", args=[new_user.id])
 
@@ -233,3 +246,35 @@ class TestManager:
         assert request.status_code == 200
         assert new_user.manager_approved
         assert new_user.manager_approved_by == user
+
+        log = Log.objects.filter(
+            reviewed_by=user,
+            reviewed_by_role=user.role,
+            reviewed_on=new_user,
+            reviewed_on_role=new_user.role,
+            review_type=ReviewType.MANAGER_APPROVAL,
+            changed_from="False",
+            changed_to="True"
+        )
+
+        assert log.exists()
+
+
+class TestLogs:
+
+    url = reverse("v1:logs:list")
+    test_hr = TestHR()
+
+    def test_get_requests_logs(self, auth_client, user):
+
+        request = auth_client.get(self.url)
+
+        assert request.status_code == 200
+        assert not request.data["count"]
+
+        self.test_hr.test_approve_user(user, auth_client)
+
+        request = auth_client.get(self.url)
+
+        assert request.status_code == 200
+        assert request.data["count"] == 1

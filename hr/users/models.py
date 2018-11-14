@@ -56,3 +56,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     def get_short_name(self):
         full_name = '%s' % self.name
         return full_name.strip()
+
+
+class Log(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviewed_by")
+    reviewed_by_role = models.IntegerField(choices=Config.CHOICES, null=True, blank=True)
+    reviewed_on = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviewed_on")
+    reviewed_on_role = models.IntegerField(choices=Config.CHOICES, null=True, blank=True)
+    review_type = models.IntegerField(choices=Config.CHOICES, null=True, blank=True)
+    changed_from = models.CharField(max_length=50)
+    changed_to = models.CharField(max_length=50)
