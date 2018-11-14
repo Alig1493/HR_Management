@@ -23,3 +23,14 @@ class IsManagerPermitted(permissions.IsAuthenticated):
             return True
 
         return False
+
+
+class IsHROrManagerPermitted(permissions.IsAuthenticated):
+
+    def has_permission(self, request, view):
+        permission = super().has_permission(request, view)
+
+        if permission and (request.user.role == Config.MANAGER or request.user.role == Config.HR):
+            return True
+
+        return False

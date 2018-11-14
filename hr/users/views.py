@@ -4,18 +4,22 @@ from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
 from hr.users.config import Status
 from hr.users.models import Log
 from hr.users.pagination import StandardResultsSetPagination
+from hr.users.permission_mixins import HRManagerPermissionMixins
 from hr.users.permissions import IsHRPermitted, IsManagerPermitted
 from hr.users.serializers import HRApproveSerializer, UserPublicSerializer, ManagerApproveSerializer, LogSerializer
 
 User = get_user_model()
 
 
-class RequestView(ListAPIView):
+class BaseRequestView(ListAPIView):
 
-    permission_classes = [IsHRPermitted]
     queryset = User.objects.filter(status=Status.OPEN).order_by("date_joined")
     serializer_class = UserPublicSerializer
     pagination_class = StandardResultsSetPagination
+
+
+class OpenRequestView(HRManagerPermissionMixins, BaseRequestView):
+    pass
 
 
 class HRApproveView(RetrieveUpdateAPIView):
@@ -30,7 +34,7 @@ class HRApproveView(RetrieveUpdateAPIView):
         serializer.save(hr_reviewed_by=self.request.user)
 
 
-class ManagerRequestView(RequestView):
+class ManagerRequestView(BaseRequestView):
 
     permission_classes = [IsManagerPermitted]
     queryset = User.objects.filter(status=Status.HR_REVIEWED).order_by("date_joined")
@@ -48,11 +52,18 @@ class ManagerApproveView(RetrieveUpdateAPIView):
         serializer.save(manager_approved_by=self.request.user)
 
 
-class LogView(ListAPIView):
+class LogView(HRManagerPermissionMixins, ListAPIView):
 
     serializer_class = LogSerializer
     queryset = Log.objects.all().order_by("created_at")
     pagination_class = StandardResultsSetPagination
 
-    def get_permissions(self):
-        return [IsHRPermitted()] or [IsManagerPermitted()]
+
+class ProcessedRequestView(HRManagerPermissionMixins, BaseRequestView):
+
+    queryset = User.objects.filter(status=Status.PROCESSED).order_by("date_joined")
+
+
+class ReviewedRequestView(HRManagerPermissionMixins, BaseRequestView):
+
+    queryset = User.objects.filter(status=Status.HR_REVIEWED).order_by("date_joined")

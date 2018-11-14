@@ -318,3 +318,102 @@ class TestLogs:
 
         assert request.status_code == 200
         assert request.data["count"] == 1
+
+
+class TestRequestView:
+
+    @pytest.fixture
+    def flush_user(self):
+        User.objects.all().delete()
+
+    def test_view_open_requests(self, auth_client, user, flush_user):
+        UserFactory(role=Config.REGULAR, status=Status.OPEN)
+
+        # set user status to something different
+        # so as to not cause conflict for the tests
+        user.status = Status.PROCESSED
+        user.save()
+
+        url = reverse("v1:requests:open")
+
+        request = auth_client.get(url)
+
+        assert request.status_code == 200
+        assert request.data["count"] == 1
+
+        user.role = Config.MANAGER
+        user.save()
+
+        request = auth_client.get(url)
+
+        assert request.status_code == 200
+        assert request.data["count"] == 1
+
+        user.role = Config.REGULAR
+        user.save()
+
+        request = auth_client.get(url)
+
+        assert request.status_code == 403
+
+    def test_view_processed_requests(self, auth_client, user, flush_user):
+
+        # set user status to something different
+        # so as to not cause conflict for the tests
+        user.status = Status.OPEN
+        user.save()
+
+        UserFactory(role=Config.REGULAR, status=Status.PROCESSED)
+
+        url = reverse("v1:requests:processed")
+
+        request = auth_client.get(url)
+
+        assert request.status_code == 200
+        assert request.data["count"] == 1
+
+        user.role = Config.MANAGER
+        user.save()
+
+        request = auth_client.get(url)
+
+        assert request.status_code == 200
+        assert request.data["count"] == 1
+
+        user.role = Config.REGULAR
+        user.save()
+
+        request = auth_client.get(url)
+
+        assert request.status_code == 403
+
+    def test_view_reviewed_requests(self, auth_client, user, flush_user):
+
+        # set user status to something different
+        # so as to not cause conflict for the tests
+        user.status = Status.OPEN
+        user.save()
+
+        UserFactory(role=Config.REGULAR, status=Status.HR_REVIEWED)
+
+        url = reverse("v1:requests:hr-reviewed")
+
+        request = auth_client.get(url)
+
+        assert request.status_code == 200
+        assert request.data["count"] == 1
+
+        user.role = Config.MANAGER
+        user.save()
+
+        request = auth_client.get(url)
+
+        assert request.status_code == 200
+        assert request.data["count"] == 1
+
+        user.role = Config.REGULAR
+        user.save()
+
+        request = auth_client.get(url)
+
+        assert request.status_code == 403
