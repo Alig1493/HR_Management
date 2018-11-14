@@ -19,7 +19,7 @@ from django.conf.urls.static import static
 from hr import settings
 from rest_framework.documentation import include_docs_urls
 
-from hr.users.urls import hr_urlpatterns, manager_urlpatterns, log_urlpatterns, requests_urlpatterns
+from hr.users.urls import hr_urlpatterns, manager_urlpatterns, log_urlpatterns, requests_urlpatterns, pdf_urlpatterns
 
 api_v1_urlpatterns = [
     url(r'^auth/', include('hr.users.urls', namespace='users')),
@@ -27,6 +27,7 @@ api_v1_urlpatterns = [
     url(r'^manager/', include(manager_urlpatterns, namespace='manager')),
     url(r'^logs/', include(log_urlpatterns, namespace='logs')),
     url(r'^requests/', include(requests_urlpatterns, namespace='requests')),
+    url(r'^pdf/', include(pdf_urlpatterns, namespace='pdf')),
 ]
 
 urlpatterns = [

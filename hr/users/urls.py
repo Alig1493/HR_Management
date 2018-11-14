@@ -3,7 +3,8 @@ from django.conf.urls import url, include
 
 from hr.users.views import (HRApproveView, OpenRequestView, ManagerRequestView,
                             ManagerApproveView, LogView,
-                            ProcessedRequestView, ReviewedRequestView)
+                            ProcessedRequestView, ReviewedRequestView,
+                            OpenRequestPDFView, ReviewedRequestPDFView, ProcessedRequestPDFView)
 
 urlpatterns = [
     url(r'^', include('rest_auth.urls')),
@@ -28,4 +29,10 @@ requests_urlpatterns = [
     url(r'^open/$', OpenRequestView.as_view(), name="open"),
     url(r'^processed/$', ProcessedRequestView.as_view(), name="processed"),
     url(r'^reviewed/$', ReviewedRequestView.as_view(), name="hr-reviewed"),
+]
+
+pdf_urlpatterns = [
+    url(r'^open/$', OpenRequestPDFView.as_view(), name="open-pdf"),
+    url(r'^processed/$', ProcessedRequestPDFView.as_view(), name="processed-pdf"),
+    url(r'^reviewed/$', ReviewedRequestPDFView.as_view(), name="reviewed-pdf"),
 ]

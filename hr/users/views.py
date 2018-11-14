@@ -7,6 +7,7 @@ from hr.users.pagination import StandardResultsSetPagination
 from hr.users.permission_mixins import HRManagerPermissionMixins
 from hr.users.permissions import IsHRPermitted, IsManagerPermitted
 from hr.users.serializers import HRApproveSerializer, UserPublicSerializer, ManagerApproveSerializer, LogSerializer
+from hr.users.view_mixins import PDFViewMixin
 
 User = get_user_model()
 
@@ -67,3 +68,18 @@ class ProcessedRequestView(HRManagerPermissionMixins, BaseRequestView):
 class ReviewedRequestView(HRManagerPermissionMixins, BaseRequestView):
 
     queryset = User.objects.filter(status=Status.HR_REVIEWED).order_by("date_joined")
+
+
+class OpenRequestPDFView(PDFViewMixin, OpenRequestView):
+
+    pass
+
+
+class ProcessedRequestPDFView(PDFViewMixin, ProcessedRequestView):
+
+    pass
+
+
+class ReviewedRequestPDFView(PDFViewMixin, ReviewedRequestView):
+
+    pass
