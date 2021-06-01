@@ -43,6 +43,6 @@ requests-oauthlib==0.8.0
 six==1.11.0
 text-unidecode==1.2
 uritemplate==3.0.0
-urllib3==1.23
+urllib3==1.26.5
 urlwait==0.4
 whitenoise==3.3.1
